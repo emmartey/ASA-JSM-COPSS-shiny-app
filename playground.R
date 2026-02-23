@@ -186,17 +186,6 @@ works <- oa_data()$works
 most_recent <- works %>% arrange(desc(year)) %>% slice_head(n = 1)
 top_cited <- works %>% arrange(desc(citations)) %>% slice_head(n = 3)
 
-tags$div(
-  tags$h5("Profile draft"),
-  tags$p(tags$strong(sr$Awardee), " is the ", sr$Year, " recipient of ", sr$AwardName, "."),
-  tags$p("Affiliation: ", sr$AwardeeAffiliation),
-  tags$p("Google Scholar: ", tags$a(href = sr$AwardeeGoogleScholar, target = "_blank", "link")),
-  tags$h6("Selected works (top cited)"),
-  tags$ul(lapply(top_cited$title, function(t) tags$li(t))),
-  tags$h6("Most recent work"),
-  tags$p(most_recent$title %||% "Not available")
-
-
 
 
 
