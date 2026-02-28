@@ -25,6 +25,8 @@ copss_awards <- copss_awards %>%
   separate_rows(Awardee, AwardeeAffiliation, AwardeeGoogleScholar, AwardeeHighestDegreeInstitution,
                 sep="; ")
 
+awards_info <- read_sheet(SHEET_COPSS, sheet = "Sheet3")
+
 
 jsm_events <- read_sheet(SHEET_JSM)
 

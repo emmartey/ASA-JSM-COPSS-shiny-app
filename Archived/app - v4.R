@@ -8,32 +8,27 @@
 #
 
 # app.R
-# COPSS Awards + JSM Events Dashboard (ASA-themed)
-# -------------------------------------------------
+# COPSS Awards + JSM Events Dashboard (ASA-themed) with Awardee Spotlight
+# ---------------------------------------------------------------------
 # What you get:
-#  - Overview tab: onboarding guidance with quick links to key tabs
-#  - Data tab: load diagnostics + COPSS/JSM data previews
-#  - COPSS Winners tab: filters + institutional plots + Sankey flow + clickable winners table
-#  - Awardee Spotlight tab: selected winner's video, citation, and OpenAlex summaries
-#  - Relive JSM Events tab: filters + city chart + map + events table
-#  - About tab: award descriptions (from COPSS Sheet3), author info, and repository link
-
+#  - Data tab: select Google Sheet tabs + preview + load diagnostics
+#  - COPSS Winners tab: filters + plots + clickable DT table
+#  - JSM Events tab: filters + plots + table
+#  - Integrated tab: COPSS x JSM inner-join on Year
+#  - Awardee Spotlight tab: click an awardee row -> video embed + citation +
+#    Google Scholar link + OpenAlex collaborators + top cited + most recent + profile draft
 #
-# Requirements (Google Sheets schemas; case/space tolerant):
-#  - COPSS Sheet1/Sheet2: AwardName, Year, Awardee, AwardeeAffiliation, Citation,
-#    AwardeeCeremony, AwardPresentationStart, AwardPresentationEnd,
-#    AwardeeGoogleScholar, AwardeeHighestDegreeInstitution
-#  - COPSS Sheet3 (About): AwardName, AboutAward, LearnMoreLink
-#  - JSM Sheet1: Year, HostCity, HostState, HostCountry, Theme, EventWebsite,
-#    PlenarySessionsWebcast, EventLogo
-
+# Requirements:
+#  - Sheets must have these schemas (column headers; case/space tolerant):
+#    COPSS: AwardName, Year, Awardee, AwardeeAffiliation, Citation, AwardeeCeremony,
+#           AwardPresentationStart, AwardPresentationEnd, AwardeeGoogleScholar,
+#           AwardeeHighestDegreeInstitution
+#    JSM:   Year, HostCity, HostState, HostCountry, Theme, EventWebsite,
+#           PlenarySessionsWebcast, EventLogo
 #
 # Run:
-#  1) install.packages(c(
-#       "shiny","bslib","dplyr","stringr","lubridate","ggplot2","DT",
-#       "googlesheets4","tidyr","httr2","purrr","readr","leaflet","sf",
-#       "tigris","rnaturalearth","rnaturalearthdata","tidygeocoder","networkD3"
-#     ))
+#  1) install.packages(c("shiny","bslib","dplyr","stringr","lubridate","ggplot2","DT",
+#                       "googlesheets4","tidyr","httr2","purrr"))
 #  2) shiny::runApp()
 
 library(shiny)
@@ -54,7 +49,6 @@ library(tigris)
 library(rnaturalearth)  
 library(rnaturalearthdata)
 library(tidygeocoder) 
-library(networkD3)
 
 # -----------------------------
 # CONFIG: Google Sheet URLs
@@ -396,64 +390,6 @@ ui <- page_navbar(
   fillable = c("Data"),
   
   nav_panel(
-    "Overview",
-    card(
-      card_header("Welcome"),
-      tags$p(
-        "Use this dashboard to explore COPSS awardees alongside JSM event history. ",
-        "Start with the ",
-        tags$a(
-          href = "#",
-          onclick = "document.querySelector('.navbar-nav a[data-value=\"Data\"]').click(); return false;",
-          "Data"
-        ),
-        " tab to load and verify source data."
-      ),
-      tags$ul(
-        tags$li(
-          tags$a(
-            href = "#",
-            onclick = "document.querySelector('.navbar-nav a[data-value=\"Data\"]').click(); return false;",
-            "Data"
-          ),
-          ": preview COPSS and JSM records and confirm load status."
-        ),
-        tags$li(
-          tags$a(
-            href = "#",
-            onclick = "document.querySelector('.navbar-nav a[data-value=\"COPSS Winners\"]').click(); return false;",
-            "COPSS Winners"
-          ),
-          ": filter winners and review affiliation and degree-institution summaries. ",
-          "Click a row in the winners table to populate the ",
-          tags$a(
-            href = "#",
-            onclick = "document.querySelector('.navbar-nav a[data-value=\"Awardee Spotlight\"]').click(); return false;",
-            "Awardee Spotlight"
-          ),
-          " tab."
-        ),
-        tags$li(
-          tags$a(
-            href = "#",
-            onclick = "document.querySelector('.navbar-nav a[data-value=\"Awardee Spotlight\"]').click(); return false;",
-            "Awardee Spotlight"
-          ),
-          ": view selected COPSS awardee's presentation media, citation, and publication highlights."
-        ),
-        tags$li(
-          tags$a(
-            href = "#",
-            onclick = "document.querySelector('.navbar-nav a[data-value=\"Relive JSM Events\"]').click(); return false;",
-            "Relive JSM Events"
-          ),
-          ": browse host cities, themes, an interactive map of meeting locations, and links to plenary sessions."
-        )
-      )
-    )
-  ),
-  
-  nav_panel(
     "Data",
     layout_sidebar(
       sidebar = sidebar(
@@ -480,16 +416,13 @@ ui <- page_navbar(
         width = 360
       ),
       layout_columns(
-        card(card_header("Awardee Highest Degree Institution"), plotOutput("copss_phd_school_plot")),
-        card(card_header("Awardee Affiliation"), plotOutput("copss_affil_plot")),
+        card(card_header("Top Awardee Affiliations"), plotOutput("copss_affil_plot")),
+        card(card_header("Top Awardee Highest Educational Institution"), plotOutput("copss_phd_school_plot")),
+        #card(card_header("Winners per year"), plotOutput("copss_year_plot")),
         col_widths = c(6, 6)
       ),
-      card(
-        card_header("Highest Degree Institution -> Affiliation Flow"),
-        sankeyNetworkOutput("copss_sankey", height = 430)
-      ),
       card(min_height = 400,
-        card_header("COPSS Winners Table (Click a row for spotlight in the next tab)"),
+        card_header("COPSS winners Table (Click a row for spotlight)"),
         DTOutput("copss_tbl")
       )
     )
@@ -505,10 +438,6 @@ ui <- page_navbar(
         hr(),
         sliderInput("oa_years_back", "OpenAlex Lookback (years)", min = 3, max = 25, value = 10),
         actionButton("refresh_openalex", "Refresh Publications", class = "btn-primary"),
-        div(
-          p(strong("OpenAlex data disclaimer:")), 
-          p("Please be aware that output based on OpenAlex may contain errors or be incomplete.")
-        ),
         width = 360
       ),
       layout_columns(
@@ -541,34 +470,7 @@ ui <- page_navbar(
       ),
       card(card_header("JSM Events Table"), DTOutput("jsm_tbl"))
     )
-  ),
-  
-  nav_spacer(),
-  
-  nav_panel(
-    "About",
-    card(
-      card_header("COPSS Awards and Dashboard Info"),
-      uiOutput("about_awards"),
-      tags$hr(),
-      tags$p(
-        tags$strong("Author: "),
-        "Emmanuel Nartey",
-        " (",
-        tags$a(href = "https://www.linkedin.com/in/emmarteyn/", target = "_blank", rel = "noopener noreferrer", "LinkedIn"),
-        ")"
-      ),
-      tags$p(
-        tags$strong("Repository: "),
-        tags$a(
-          href = "https://github.com/emmartey/ASA-JSM-COPSS-shiny-app",
-          target = "_blank",
-          rel = "noopener noreferrer",
-          "ASA-JSM-COPSS-shiny-app on GitHub"
-        )
-      )
-    )
-  )  
+  )
 )
 
 # -----------------------------
@@ -592,7 +494,6 @@ server <- function(input, output, session) {
     list(
       copss1 = safe_read_sheet(SHEET_COPSS,"Sheet1"),
       copss2 = safe_read_sheet(SHEET_COPSS,"Sheet2"),
-      copss_about = safe_read_sheet(SHEET_COPSS,"Sheet3"),
       jsm   = safe_read_sheet(SHEET_JSM,"Sheet1")
     )
   }, ignoreInit = FALSE)
@@ -600,7 +501,6 @@ server <- function(input, output, session) {
   copss <- reactive(standardize_copss(bind_rows(raw_data()$copss1, raw_data()$copss2) %>% 
                                         separate_rows(Awardee, AwardeeAffiliation, AwardeeGoogleScholar, AwardeeHighestDegreeInstitution,
                                                       sep="; ")))
-  copss_about <- reactive(raw_data()$copss_about)
   jsm   <- reactive(standardize_jsm(raw_data()$jsm))
   
   output$load_status <- renderPrint({
@@ -626,28 +526,6 @@ server <- function(input, output, session) {
                 rename(`Host City`=HostCity), 
               options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
   })
-  
-  output$about_awards <- renderUI({
-    dat <- copss_about()
-    validate(need(!".error" %in% names(dat), "Could not load COPSS award descriptions."))
-    
-    tagList(lapply(seq_len(nrow(dat)), function(i) {
-      row <- dat[i, ]
-      tags$p(
-        tags$strong(row$AwardName %||% ""),
-        ": ",
-        row$AboutAward %||% "",
-        " ",
-        tags$a(
-          href = row$LearnMoreLink %||% "#",
-          target = "_blank",
-          rel = "noopener noreferrer",
-          "Learn more"
-        )
-      )
-    }))
-  })
-  
   
   observe({
     a <- copss()
@@ -724,75 +602,11 @@ server <- function(input, output, session) {
     out
   })
   
-  output$copss_sankey <- renderSankeyNetwork({
-    top_n <- 15
-    df <- copss_f() %>%
-      filter(
-        !is.na(AwardeeAffiliation), AwardeeAffiliation != "",
-        !is.na(AwardeeHighestDegreeInstitution), AwardeeHighestDegreeInstitution != ""
-      )
-    
-    validate(need(nrow(df) > 0, "No institution pairs available after filtering."))
-    
-    top_affil <- df %>%
-      count(AwardeeAffiliation, sort = TRUE) %>%
-      slice_head(n = top_n) %>%
-      pull(AwardeeAffiliation)
-    
-    top_deg <- df %>%
-      count(AwardeeHighestDegreeInstitution, sort = TRUE) %>%
-      slice_head(n = top_n) %>%
-      pull(AwardeeHighestDegreeInstitution)
-    
-    copss_sankey <- df %>%
-      mutate(
-        affil_grp = ifelse(AwardeeAffiliation %in% top_affil, AwardeeAffiliation, "Other affiliations"),
-        deg_grp = ifelse(AwardeeHighestDegreeInstitution %in% top_deg, AwardeeHighestDegreeInstitution, "Other degree institutions")
-      )
-    
-    links_named <- copss_sankey %>%
-      count(deg_grp, affil_grp, name = "value") %>%
-      rename(source_name = deg_grp, target_name = affil_grp)
-    
-    nodes <- tibble(name = unique(c(links_named$source_name, links_named$target_name))) %>%
-      mutate(group = name)
-    
-    links <- links_named %>%
-      mutate(
-        source = match(source_name, nodes$name) - 1L,
-        target = match(target_name, nodes$name) - 1L,
-        group = source_name
-      )
-    
-    palette <- grDevices::hcl.colors(nrow(nodes), palette = "Dark 3")
-    colour_scale <- paste0(
-      "d3.scaleOrdinal()",
-      ".domain(", jsonlite::toJSON(nodes$group, auto_unbox = TRUE), ")",
-      ".range(", jsonlite::toJSON(unname(palette), auto_unbox = TRUE), ")"
-    )
-    
-    sankeyNetwork(
-      Links = as.data.frame(links),
-      Nodes = as.data.frame(nodes),
-      Source = "source",
-      Target = "target",
-      Value = "value",
-      NodeID = "name",
-      NodeGroup = "group",
-      LinkGroup = "group",
-      colourScale = htmlwidgets::JS(colour_scale),
-      fontSize = 12,
-      nodeWidth = 30,
-      sinksRight = TRUE
-    )
-  })
-
-  
   output$copss_tbl <- renderDT({
     datatable(
       copss_f() %>% 
-        select(Year, AwardName, Awardee, AwardeeHighestDegreeInstitution,  
-               AwardeeAffiliation, Citation) %>% 
+        select(Year, AwardName, Awardee, AwardeeAffiliation, 
+               AwardeeHighestDegreeInstitution, Citation) %>% 
         rename(Award=AwardName, Affiliation=AwardeeAffiliation,
                `Highest Degree Institution`=AwardeeHighestDegreeInstitution),
       options = list(pageLength = 20, scrollX = TRUE),
@@ -941,7 +755,7 @@ server <- function(input, output, session) {
   
   spotlight <- reactive({
     sr <- selected_row()
-    validate(need(!is.null(sr), "Click a row in the COPSS Winners table to populate the Awardee Spotlight."))
+    validate(need(!is.null(sr), "Click a row in the COPSS winners table to populate the Awardee Spotlight."))
     sr
   })
   
