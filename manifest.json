@@ -3371,10 +3371,10 @@
   },
   "files": {
     ".Rprofile": {
-      "checksum": "5c7227e722f27b5c034ced23be41d3e1"
+      "checksum": "b4bc637f99001808bfa6aaa26a6ef57c"
     },
     "app.R": {
-      "checksum": "90250afb1aaa734b9ff81ff68c8c726b"
+      "checksum": "ab0b8e4558540063a110c167f634361d"
     },
     "Archived/app - v1.R": {
       "checksum": "0a7cca17b46d5d10cce6bd85d1d87d04"
@@ -3385,6 +3385,9 @@
     "Archived/app - v3.R": {
       "checksum": "f699cd9d1de13b13eaf258dc870ce427"
     },
+    "Archived/app - v4.R": {
+      "checksum": "90250afb1aaa734b9ff81ff68c8c726b"
+    },
     "file.csv": {
       "checksum": "6444fa440dd6a5121790976757575f20"
     },
@@ -3392,7 +3395,7 @@
       "checksum": "ae29fe3d9aa573d8eddc1ceaf9a5a78d"
     },
     "playground.R": {
-      "checksum": "a4f7e1c673c3e05473fd51baca479d41"
+      "checksum": "b355752520a561875d6683f28413e1e2"
     },
     "renv.lock": {
       "checksum": "d968a31828d8ad59ec93fb407274b8b1"
