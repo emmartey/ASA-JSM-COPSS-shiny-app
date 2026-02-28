@@ -448,6 +448,14 @@ ui <- page_navbar(
             "Relive JSM Events"
           ),
           ": browse host cities, themes, an interactive map of meeting locations, and links to plenary sessions."
+        ),
+        tags$li(
+          tags$a(
+            href = "#",
+            onclick = "document.querySelector('.navbar-nav a[data-value=\"About\"]').click(); return false;",
+            "About"
+          ),
+          ": view COPSS award descriptions and author/repository links."
         )
       )
     )
